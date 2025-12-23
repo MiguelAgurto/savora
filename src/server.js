@@ -8,7 +8,7 @@ app.use(express.json());
 app.use("/api", recipesRoutes);
 
 app.get("/health", (req, res) => {
-  res.json({ status: "ok" });
+  res.json({ ok: true, service: "savora-api" });
 });
 
 app.use("/api", recipeRoutes);

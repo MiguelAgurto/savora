@@ -1,0 +1,5 @@
+- Do not change behavior unless explicitly requested
+- Prefer small, incremental diffs
+- Run tests or dev server after changes
+- Explain risks before large refactors
+- Do not add dependencies without approval
