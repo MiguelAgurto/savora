@@ -1,4 +1,10 @@
-import { createRecipe, getRecipeById, listRecipes } from "../services/recipeStore.js";
+import {
+  createRecipe,
+  getRecipeById,
+  listRecipes,
+  updateRecipeById,
+  deleteRecipeById
+} from "../services/recipeStore.js";
 
 export function saveRecipe(req, res) {
   const { recipe } = req.body ?? {};
@@ -40,4 +46,28 @@ export function getRecipes(req, res) {
 
   const recipes = listRecipes(safeLimit);
   return res.json({ ok: true, recipes });
+}
+export function patchRecipe(req, res) {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "INVALID_ID" });
+
+  const { recipe } = req.body ?? {};
+  if (!recipe || typeof recipe !== "object") {
+    return res.status(400).json({ error: "INVALID_INPUT", message: "Provide { recipe: {...} }" });
+  }
+
+  const updated = updateRecipeById(id, recipe);
+  if (!updated) return res.status(404).json({ error: "NOT_FOUND" });
+
+  return res.json({ ok: true, recipe: updated });
+}
+
+export function deleteRecipe(req, res) {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "INVALID_ID" });
+
+  const ok = deleteRecipeById(id);
+  if (!ok) return res.status(404).json({ error: "NOT_FOUND" });
+
+  return res.json({ ok: true });
 }

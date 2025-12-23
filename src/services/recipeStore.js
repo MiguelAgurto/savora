@@ -44,3 +44,36 @@ export function getRecipeById(id) {
     createdAt: row.created_at
   };
 }
+
+export function updateRecipeById(id, patch) {
+  const existing = getRecipeById(id);
+  if (!existing) return null;
+
+  const next = {
+    title: typeof patch.title === "string" ? patch.title.trim() : existing.title,
+    ingredients: Array.isArray(patch.ingredients) ? patch.ingredients : existing.ingredients,
+    steps: Array.isArray(patch.steps) ? patch.steps : existing.steps,
+    notes: typeof patch.notes === "string" ? patch.notes : existing.notes,
+    rawText: typeof patch.rawText === "string" ? patch.rawText : existing.rawText
+  };
+
+  db.prepare(`
+    UPDATE recipes
+    SET title = ?, ingredients_json = ?, steps_json = ?, notes = ?, raw_text = ?
+    WHERE id = ?
+  `).run(
+    next.title,
+    JSON.stringify(next.ingredients),
+    JSON.stringify(next.steps),
+    next.notes,
+    next.rawText,
+    id
+  );
+
+  return getRecipeById(id);
+}
+
+export function deleteRecipeById(id) {
+  const info = db.prepare(`DELETE FROM recipes WHERE id = ?`).run(id);
+  return info.changes > 0;
+}
