@@ -1,0 +1,15 @@
+{
+  "name": "savora",
+  "version": "1.0.0",
+  "description": "Recipe capture and organization app. Built step by step from scratch.",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+}
