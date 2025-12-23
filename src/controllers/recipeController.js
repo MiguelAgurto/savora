@@ -16,7 +16,9 @@ export async function extractRecipe(req, res) {
     return res.json({
       ok: true,
       source: "text",
-      recipe: result
+      confidence: result.confidence,
+      warnings: result.warnings,
+      recipe: result.recipe
     });
   } catch (err) {
     console.error(err);

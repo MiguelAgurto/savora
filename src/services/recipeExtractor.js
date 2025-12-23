@@ -4,17 +4,17 @@ function cleanLine(s) {
 
 function stripBullet(s) {
   return s
-    .replace(/^[-*•\u2022]\s*/, "")          // bullets
-    .replace(/^\(?\d+[\).\:-]\s*/, "")       // 1.  1)  1-  1:
+    .replace(/^[-*•\u2022]\s*/, "") // bullets
+    .replace(/^\(?\d+[\).\:-]\s*/, "") // 1.  1)  1-  1:
     .trim();
 }
 
-
 function isProbablyIngredient(line) {
-  // rough heuristic: contains a number or a common unit or starts with bullet
   return (
     /\d/.test(line) ||
-    /\b(g|kg|ml|l|tbsp|tsp|cup|cups|oz|lb|pinch|clove|cloves|slice|slices)\b/i.test(line) ||
+    /\b(g|kg|ml|l|tbsp|tsp|cup|cups|oz|lb|pinch|clove|cloves|slice|slices)\b/i.test(
+      line
+    ) ||
     /^[-*•\u2022]\s+/.test(line)
   );
 }
@@ -22,17 +22,14 @@ function isProbablyIngredient(line) {
 export async function extractFromText(text) {
   const raw = text;
 
-  // Split into non-empty lines
   const lines = raw
     .split(/\r?\n/)
     .map(cleanLine)
     .filter(Boolean);
 
-  // Title: first non-empty line (if short-ish), else "Untitled Recipe"
   let title = "Untitled Recipe";
   if (lines.length > 0 && lines[0].length <= 80) title = lines[0];
 
-  // Identify sections by headers
   const lowerLines = lines.map((l) => l.toLowerCase());
 
   const idxIngredients = lowerLines.findIndex((l) =>
@@ -46,7 +43,6 @@ export async function extractFromText(text) {
   let steps = [];
 
   if (idxIngredients !== -1 || idxDirections !== -1) {
-    // Section-based extraction
     const ingStart = idxIngredients !== -1 ? idxIngredients + 1 : -1;
     const stepStart = idxDirections !== -1 ? idxDirections + 1 : -1;
 
@@ -59,22 +55,18 @@ export async function extractFromText(text) {
       steps = lines.slice(stepStart).map(stripBullet).filter(Boolean);
     }
   } else {
-    // Heuristic extraction if no headers:
-    // Find ingredient-like lines until we hit a paragraph-ish instruction block.
-    const possible = lines.slice(1); // ignore title line
+    const possible = lines.slice(1);
     const ing = [];
     const st = [];
 
     for (const line of possible) {
-      if (line.length === 0) continue;
+      if (!line) continue;
 
-      // If it looks like an ingredient and we haven't started steps yet
       if (st.length === 0 && isProbablyIngredient(line) && line.length <= 120) {
         ing.push(stripBullet(line));
         continue;
       }
 
-      // Otherwise treat as instruction/step
       st.push(stripBullet(line));
     }
 
@@ -82,7 +74,6 @@ export async function extractFromText(text) {
     steps = st;
   }
 
-  // If steps are one big sentence, split on periods as a fallback
   if (steps.length === 1 && steps[0].split(".").length >= 3) {
     steps = steps[0]
       .split(".")
@@ -90,14 +81,24 @@ export async function extractFromText(text) {
       .filter(Boolean);
   }
 
-  // Normalize: remove duplicates and empty
   const uniq = (arr) => Array.from(new Set(arr.map(cleanLine))).filter(Boolean);
 
-  return {
+  const recipe = {
     title: cleanLine(title),
     ingredients: uniq(ingredients),
     steps: uniq(steps),
     notes: "",
     rawText: raw
   };
+
+  const warnings = [];
+  if (recipe.ingredients.length === 0) warnings.push("NO_INGREDIENTS_DETECTED");
+  if (recipe.steps.length === 0) warnings.push("NO_STEPS_DETECTED");
+  if (recipe.title === "Untitled Recipe") warnings.push("NO_TITLE_DETECTED");
+
+  let confidence = 0.9;
+  if (warnings.length === 1) confidence = 0.7;
+  if (warnings.length >= 2) confidence = 0.5;
+
+  return { recipe, warnings, confidence };
 }
