@@ -1,4 +1,5 @@
 import express from "express";
+import recipeRoutes from "./routes/recipeRoutes.js";
 
 const app = express();
 app.use(express.json());
@@ -6,5 +7,7 @@ app.use(express.json());
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
+
+app.use("/api", recipeRoutes);
 
 export default app;
